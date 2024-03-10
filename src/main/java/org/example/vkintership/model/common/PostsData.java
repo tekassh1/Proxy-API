@@ -7,7 +7,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class PostsData {
+public class PostsData implements Data {
     @NotNull private Long userId;
     private Long id;
     @NotNull private String title;

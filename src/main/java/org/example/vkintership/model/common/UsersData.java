@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @RequiredArgsConstructor
 @Builder
-public class UsersData {
+public class UsersData implements Data {
     private Long id;
     @NotNull private String name;
     @NotNull private String username;

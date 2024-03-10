@@ -7,7 +7,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class AlbumsData {
+public class AlbumsData implements Data {
     @NotNull private Long userId;
     private Long id;
     @NotNull private String title;

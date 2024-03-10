@@ -1,6 +1,10 @@
 package org.example.vkintership.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.vkintership.model.caching.CacheType;
 import org.example.vkintership.model.common.AlbumsData;
+import org.example.vkintership.service.CachingService;
 import org.example.vkintership.service.WebService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,16 +22,39 @@ public class AlbumsController {
     @Autowired
     WebService webService;
 
+    @Autowired
+    CachingService cachingService;
+
     @GetMapping("/{albumId}")
     @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
-    public Mono<ResponseEntity<String>> getById(@PathVariable Long albumId) {
-        return webClient
-                .get()
-                .uri(String.join("", "/albums/", String.valueOf(albumId)))
-                .retrieve()
-                .bodyToMono(String.class)
-                .map(ResponseEntity::ok)
-                .onErrorResume(throwable -> webService.handleErrorResponse(throwable));
+    public Mono<ResponseEntity<String>> getById(@PathVariable Long albumId) throws JsonProcessingException {
+
+        if (cachingService.isCacheValid(CacheType.ALBUMS) &&
+                cachingService.findEntityById(CacheType.ALBUMS, albumId) != null) {
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            return Mono.just(ResponseEntity.ok(
+                    objectMapper.writeValueAsString(cachingService.findEntityById(CacheType.ALBUMS, albumId))));
+        }
+        else if (cachingService.isCacheValid(CacheType.ALBUMS)) {
+//            Делаем запрос, добавляем в коллекцию в кэше и возвращаем значение
+
+//            String res = webClient
+//                    .get()
+//                    .uri(String.join("", "/albums/", String.valueOf(albumId)))
+//                    .retrieve()
+//                    .bodyToMono(String.class)
+//                    .onErrorResume(throwable -> webService.handleErrorResponse(throwable));
+        }
+
+        // Обновляем коллекцию полностью и возвращаем значение
+        cachingService.updateCache(CacheType.ALBUMS);
+        AlbumsData album = (AlbumsData) cachingService.getCache(CacheType.ALBUMS).get(albumId);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        return Mono.just(ResponseEntity.ok().body(
+                objectMapper.writeValueAsString(album)
+        ));
     }
 
     @GetMapping

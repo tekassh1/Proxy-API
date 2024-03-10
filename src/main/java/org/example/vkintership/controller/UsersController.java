@@ -3,6 +3,7 @@ package org.example.vkintership.controller;
 import org.example.vkintership.model.common.UsersData;
 import org.example.vkintership.service.WebService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;

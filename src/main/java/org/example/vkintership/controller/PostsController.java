@@ -3,6 +3,7 @@ package org.example.vkintership.controller;
 import org.example.vkintership.model.common.PostsData;
 import org.example.vkintership.service.WebService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -59,7 +60,7 @@ public class PostsController {
     @PreAuthorize("hasAnyAuthority('ROLE_POSTS', 'ROLE_ADMIN')")
     public Mono<ResponseEntity<String>> put(@PathVariable Long postId,
                                             @RequestBody PostsData postsData) {
-
+        // Изменяем в кэше, если инвалид => отклоняем, а уже потом запрос
         return webClient
                 .put()
                 .uri(String.join("", "/posts/", String.valueOf(postId)))

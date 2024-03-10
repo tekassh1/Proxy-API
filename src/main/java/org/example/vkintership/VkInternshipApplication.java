@@ -4,8 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class VkIntershipApplication {
+public class VkInternshipApplication {
     public static void main(String[] args) {
-        SpringApplication.run(VkIntershipApplication.class, args);
+        SpringApplication.run(VkInternshipApplication.class, args);
     }
 }
