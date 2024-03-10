@@ -1,4 +1,4 @@
-package org.example.vkintership.model;
+package org.example.vkintership.model.admin;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

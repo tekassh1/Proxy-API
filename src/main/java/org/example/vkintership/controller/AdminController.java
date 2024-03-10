@@ -2,7 +2,7 @@ package org.example.vkintership.controller;
 
 import org.example.vkintership.entity.Role;
 import org.example.vkintership.entity.User;
-import org.example.vkintership.model.AdminRequest;
+import org.example.vkintership.model.admin.AdminRequest;
 import org.example.vkintership.repository.RoleRepository;
 import org.example.vkintership.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
