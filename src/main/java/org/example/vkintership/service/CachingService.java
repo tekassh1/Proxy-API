@@ -10,10 +10,13 @@ import org.example.vkintership.model.common.Data;
 import org.example.vkintership.model.common.PostsData;
 import org.example.vkintership.model.common.UsersData;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,6 +59,9 @@ public class CachingService <T extends Data> {
                         .get()
                         .uri("/albums")
                         .retrieve()
+                        .onStatus(HttpStatusCode::isError, clientResponse ->
+                                Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
+                        )
                         .bodyToMono(String.class)
                         .block();
 
@@ -71,6 +77,9 @@ public class CachingService <T extends Data> {
                         .get()
                         .uri("/posts")
                         .retrieve()
+                        .onStatus(HttpStatusCode::isError, clientResponse ->
+                                Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
+                        )
                         .bodyToMono(String.class)
                         .block();
 
@@ -86,6 +95,9 @@ public class CachingService <T extends Data> {
                         .get()
                         .uri("/users")
                         .retrieve()
+                        .onStatus(HttpStatusCode::isError, clientResponse ->
+                                Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
+                        )
                         .bodyToMono(String.class)
                         .onErrorReturn("false") // В случае ошибки возвращаем "false"
                         .block();
@@ -98,12 +110,10 @@ public class CachingService <T extends Data> {
         }
     }
 
-    @Scheduled(fixedRate = 3000)
+    @Scheduled(fixedRate = 5000)
     public void checkCache()  throws JsonProcessingException {
         for (var entry : cachesList.entrySet()) {
-            System.out.println("Cache " + entry.getKey().toString() + " was updated!");
             if (!entry.getValue().isValid()) updateCache(entry.getKey());
         }
-        System.out.println("\n");
     }
 }

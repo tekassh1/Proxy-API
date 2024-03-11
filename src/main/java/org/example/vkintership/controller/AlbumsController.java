@@ -9,16 +9,17 @@ import org.example.vkintership.service.CachingService;
 import org.example.vkintership.service.WebService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
 
 @RestController
-@RequestMapping("api/albums")
 public class AlbumsController {
 
     @Autowired
@@ -29,9 +30,10 @@ public class AlbumsController {
     @Autowired
     CachingService cachingService;
 
-    @GetMapping("/{albumId}")
+    @GetMapping("api/albums/{albumId}")
     @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
-    public Mono<ResponseEntity<String>> getById(@PathVariable Long albumId) throws JsonProcessingException {
+    public Mono<ResponseEntity<String>> getById(@PathVariable Long albumId)
+            throws JsonProcessingException, HttpClientErrorException {
 
         Cache cache = cachingService.getCache(CacheType.ALBUMS);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -47,6 +49,9 @@ public class AlbumsController {
                     .get()
                     .uri(String.join("", "/albums/", String.valueOf(albumId)))
                     .retrieve()
+                    .onStatus(HttpStatusCode::isError, clientResponse ->
+                            Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
+                    )
                     .bodyToMono(String.class)
                     .block();
 
@@ -58,12 +63,11 @@ public class AlbumsController {
         cachingService.updateCache(CacheType.ALBUMS);
 
         AlbumsData album = (AlbumsData) cache.getById(albumId);
-        return Mono.just(ResponseEntity.ok().body(
-                objectMapper.writeValueAsString(album)
+        return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(album)
         ));
     }
 
-    @GetMapping
+    @GetMapping(value = {"api/albums", "api/albums/"})
     @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
     public Mono<ResponseEntity<String>> getAll() throws JsonProcessingException {
 
@@ -77,7 +81,7 @@ public class AlbumsController {
         return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(tmp)));
     }
 
-    @PostMapping
+    @PostMapping(value = {"api/albums", "api/albums/"})
     @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
     public Mono<ResponseEntity<String>> post(@RequestBody AlbumsData albumsData) throws JsonProcessingException {
 
@@ -88,6 +92,9 @@ public class AlbumsController {
                 .uri("/albums")
                 .body(Mono.just(albumsData), AlbumsData.class)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse ->
+                        Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
+                )
                 .bodyToMono(String.class)
                 .block();
 
@@ -99,7 +106,7 @@ public class AlbumsController {
         return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(album)));
     }
 
-    @PutMapping("/{albumId}")
+    @PutMapping("api/albums/{albumId}")
     @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
     public Mono<ResponseEntity<String>> put(@PathVariable Long albumId,
                             @RequestBody AlbumsData albumsData) throws JsonProcessingException {
@@ -115,6 +122,9 @@ public class AlbumsController {
                 .uri(String.join("", "/albums/", String.valueOf(albumId)))
                 .body(Mono.just(albumsData), AlbumsData.class)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse ->
+                        Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
+                )
                 .bodyToMono(String.class)
                 .block();
 
@@ -126,7 +136,7 @@ public class AlbumsController {
         return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(album)));
     }
 
-    @DeleteMapping("/{albumId}")
+    @DeleteMapping("api/albums/{albumId}")
     @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
     public Mono<ResponseEntity<String>> delete(@PathVariable Long albumId) {
 
@@ -140,6 +150,9 @@ public class AlbumsController {
                 .delete()
                 .uri(String.join("", "/albums/", String.valueOf(albumId)))
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse ->
+                        Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
+                )
                 .bodyToMono(String.class)
                 .map(ResponseEntity::ok)
                 .onErrorResume(throwable -> webService.handleErrorResponse(throwable));
