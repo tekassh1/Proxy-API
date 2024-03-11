@@ -1,3 +1,4 @@
-add links ending with "/"
-copy albums controller to others (throwing requests errors)
-test cache
+~~add links ending with "/"~~
+~~copy albums controller to others (throwing requests errors)~~
+~~test cache~~
+HTTP DELETE doesn't work

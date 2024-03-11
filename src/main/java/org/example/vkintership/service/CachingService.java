@@ -41,17 +41,8 @@ public class CachingService <T extends Data> {
         return cachesList.get(type);
     }
 
-    public boolean isCacheValid(CacheType type) {
-        return cachesList.get(type).isValid();
-    }
-
-    public void invalidateCache(CacheType type) {
-        cachesList.get(type).setValid();
-    }
-
     public void updateCache(CacheType cacheType) throws JsonProcessingException {
         switch (cacheType){
-
             case ALBUMS -> {
                 cachesList.get(CacheType.ALBUMS).getCache().clear();
 
