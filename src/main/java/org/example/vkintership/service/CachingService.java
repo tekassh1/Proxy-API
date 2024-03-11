@@ -32,9 +32,9 @@ public class CachingService <T extends Data> {
     private ConcurrentHashMap<CacheType, Cache> cachesList = new ConcurrentHashMap<>();
 
     public CachingService() {
-        cachesList.put(CacheType.POSTS, new Cache(new ConcurrentHashMap<Long, PostsData>(), null));
-        cachesList.put(CacheType.ALBUMS, new Cache(new ConcurrentHashMap<Long, AlbumsData>(), null));
-        cachesList.put(CacheType.USERS, new Cache(new ConcurrentHashMap<Long, UsersData>(), null));
+        cachesList.put(CacheType.POSTS, new Cache(new ConcurrentHashMap<Long, PostsData>(), 5000L));
+        cachesList.put(CacheType.ALBUMS, new Cache(new ConcurrentHashMap<Long, AlbumsData>(), 5000L));
+        cachesList.put(CacheType.USERS, new Cache(new ConcurrentHashMap<Long, UsersData>(), 5000L));
     }
 
     public Cache getCache(CacheType type) {
