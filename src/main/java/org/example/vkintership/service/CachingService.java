@@ -29,21 +29,21 @@ public class CachingService <T extends Data> {
     private ConcurrentHashMap<CacheType, Cache> cachesList = new ConcurrentHashMap<>();
 
     public CachingService() {
-        cachesList.put(CacheType.POSTS, new Cache(new ConcurrentHashMap<Long, PostsData>(), false));
-        cachesList.put(CacheType.ALBUMS, new Cache(new ConcurrentHashMap<Long, AlbumsData>(), false));
-        cachesList.put(CacheType.USERS, new Cache(new ConcurrentHashMap<Long, UsersData>(), false));
+        cachesList.put(CacheType.POSTS, new Cache(new ConcurrentHashMap<Long, PostsData>(), null));
+        cachesList.put(CacheType.ALBUMS, new Cache(new ConcurrentHashMap<Long, AlbumsData>(), null));
+        cachesList.put(CacheType.USERS, new Cache(new ConcurrentHashMap<Long, UsersData>(), null));
     }
 
-    public T findEntityById(CacheType type, Long key) {
-        return (T) cachesList.get(type).getById(key);
-    }
-
-    public ConcurrentHashMap<Long, T> getCache(CacheType type) {
-        return cachesList.get(type).getCache();
+    public Cache getCache(CacheType type) {
+        return cachesList.get(type);
     }
 
     public boolean isCacheValid(CacheType type) {
         return cachesList.get(type).isValid();
+    }
+
+    public void invalidateCache(CacheType type) {
+        cachesList.get(type).setValid();
     }
 
     public void updateCache(CacheType cacheType) throws JsonProcessingException {
@@ -60,8 +60,9 @@ public class CachingService <T extends Data> {
                         .block();
 
                 ObjectMapper objectMapper = new ObjectMapper();
-                ConcurrentHashMap<Long, AlbumsData> tmp = objectMapper.readValue(res, new TypeReference<>() {});
-                tmp.forEach((key, value) -> cachesList.get(CacheType.ALBUMS).addValue(key, value));
+                List<AlbumsData> tmp = objectMapper.readValue(res, new TypeReference<>() {});
+                tmp.forEach(value -> cachesList.get(CacheType.ALBUMS).addValue(value.getId(), value));
+                cachesList.get(CacheType.ALBUMS).setValid();
             }
             case POSTS -> {
                 cachesList.get(CacheType.POSTS).getCache().clear();
@@ -74,8 +75,9 @@ public class CachingService <T extends Data> {
                         .block();
 
                 ObjectMapper objectMapper = new ObjectMapper();
-                ConcurrentHashMap<Long, PostsData> tmp = objectMapper.readValue(res, new TypeReference<>() {});
-                tmp.forEach((key, value) -> cachesList.get(CacheType.POSTS).addValue(key, value));
+                List<PostsData> tmp = objectMapper.readValue(res, new TypeReference<>() {});
+                tmp.forEach(value -> cachesList.get(CacheType.POSTS).addValue(value.getId(), value));
+                cachesList.get(CacheType.POSTS).setValid();
             }
             case USERS -> {
                 cachesList.get(CacheType.USERS).getCache().clear();
@@ -89,9 +91,19 @@ public class CachingService <T extends Data> {
                         .block();
 
                 ObjectMapper objectMapper = new ObjectMapper();
-                ConcurrentHashMap<Long, UsersData> tmp = objectMapper.readValue(res, new TypeReference<>() {});
-                tmp.forEach((key, value) -> cachesList.get(CacheType.USERS).addValue(key, value));
+                List<UsersData> tmp = objectMapper.readValue(res, new TypeReference<>() {});
+                tmp.forEach(value -> cachesList.get(CacheType.USERS).addValue(value.getId(), value));
+                cachesList.get(CacheType.USERS).setValid();
             }
         }
+    }
+
+    @Scheduled(fixedRate = 3000)
+    public void checkCache()  throws JsonProcessingException {
+        for (var entry : cachesList.entrySet()) {
+            System.out.println("Cache " + entry.getKey().toString() + " was updated!");
+            if (!entry.getValue().isValid()) updateCache(entry.getKey());
+        }
+        System.out.println("\n");
     }
 }
