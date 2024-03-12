@@ -31,7 +31,7 @@ public class UsersController {
     CachingService cachingService;
 
     @GetMapping("api/users/{userId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_USERS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_USERS', 'ROLE_USERS_VIEWER')")
     public Mono<ResponseEntity<String>> getUserById(@PathVariable Long userId)
             throws JsonProcessingException, HttpClientErrorException {
 
@@ -52,6 +52,9 @@ public class UsersController {
                     .bodyToMono(String.class)
                     .block();
 
+            if (res == null)
+                return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Requested id was not found!"));
+
             UsersData data = objectMapper.readValue(res, UsersData.class);
             cache.addValue(data.getId(), data);
             return Mono.just(ResponseEntity.ok().body(res));
@@ -60,11 +63,14 @@ public class UsersController {
         cachingService.updateCache(CacheType.USERS);
 
         UsersData user = (UsersData) cache.getById(userId);
-        return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(user)));
+        if (user == null)
+            return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Requested id was not found!"));
+        else
+            return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(user)));
     }
 
     @GetMapping(value = {"api/users", "api/users/"})
-    @PreAuthorize("hasAnyAuthority('ROLE_USERS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_USERS', 'ROLE_USERS_VIEWER')")
     public Mono<ResponseEntity<String>> getAllUsers() throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.USERS);
@@ -78,15 +84,15 @@ public class UsersController {
     }
 
     @PostMapping(value = {"api/users", "api/users/"})
-    @PreAuthorize("hasAnyAuthority('ROLE_USERS', 'ROLE_ADMIN')")
-    public Mono<ResponseEntity<String>> createUser(@RequestBody UsersData usersData) throws JsonProcessingException {
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_USERS', 'ROLE_USERS_EDITOR')")
+    public Mono<ResponseEntity<String>> createUser(@RequestBody UsersData userData) throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.USERS);
 
         String res = webClient
                 .post()
                 .uri("/users")
-                .body(Mono.just(usersData), UsersData.class)
+                .body(Mono.just(userData), UsersData.class)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, clientResponse ->
                         Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
@@ -103,9 +109,9 @@ public class UsersController {
     }
 
     @PutMapping("api/users/{userId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_USERS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_USERS', 'ROLE_USERS_EDITOR')")
     public Mono<ResponseEntity<String>> updateUser(@PathVariable Long userId,
-                                                   @RequestBody UsersData usersData) throws JsonProcessingException {
+                                                   @RequestBody UsersData userData) throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.USERS);
 
@@ -116,7 +122,7 @@ public class UsersController {
         String res = webClient
                 .put()
                 .uri(String.join("", "/users/", String.valueOf(userId)))
-                .body(Mono.just(usersData), UsersData.class)
+                .body(Mono.just(userData), UsersData.class)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, clientResponse ->
                         Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
@@ -133,8 +139,8 @@ public class UsersController {
     }
 
     @DeleteMapping("api/users/{userId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_USERS', 'ROLE_ADMIN')")
-    public Mono<ResponseEntity<String>> deleteUser(@PathVariable Long userId) {
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_USERS', 'ROLE_USERS_EDITOR')")
+    public Mono<ResponseEntity<String>> deleteUser(@PathVariable Long userId) throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.USERS);
         if (cache.getById(userId) == null)
@@ -142,7 +148,7 @@ public class UsersController {
 
         cache.removeValue(userId);
 
-        return webClient
+        String res = webClient
                 .delete()
                 .uri(String.join("", "/users/", String.valueOf(userId)))
                 .retrieve()
@@ -150,7 +156,9 @@ public class UsersController {
                         Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
                 )
                 .bodyToMono(String.class)
-                .map(ResponseEntity::ok)
-                .onErrorResume(throwable -> webService.handleErrorResponse(throwable));
+                .block();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(res)));
     }
 }

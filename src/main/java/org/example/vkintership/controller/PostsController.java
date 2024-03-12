@@ -8,7 +8,6 @@ import org.example.vkintership.model.common.PostsData;
 import org.example.vkintership.service.CachingService;
 import org.example.vkintership.service.WebService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +31,7 @@ public class PostsController {
     CachingService cachingService;
 
     @GetMapping("api/posts/{postId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_POSTS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_POSTS', 'ROLE_POSTS_VIEWER')")
     public Mono<ResponseEntity<String>> getPostById(@PathVariable Long postId)
             throws JsonProcessingException, HttpClientErrorException {
 
@@ -53,6 +52,9 @@ public class PostsController {
                     .bodyToMono(String.class)
                     .block();
 
+            if (res == null)
+                return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Requested id was not found!"));
+
             PostsData data = objectMapper.readValue(res, PostsData.class);
             cache.addValue(data.getId(), data);
             return Mono.just(ResponseEntity.ok().body(res));
@@ -61,11 +63,14 @@ public class PostsController {
         cachingService.updateCache(CacheType.POSTS);
 
         PostsData post = (PostsData) cache.getById(postId);
-        return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(post)));
+        if (post == null)
+            return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Requested id was not found!"));
+        else
+            return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(post)));
     }
 
     @GetMapping(value = {"api/posts", "api/posts/"})
-    @PreAuthorize("hasAnyAuthority('ROLE_POSTS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_POSTS', 'ROLE_POSTS_VIEWER')")
     public Mono<ResponseEntity<String>> getAllPosts() throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.POSTS);
@@ -79,7 +84,7 @@ public class PostsController {
     }
 
     @PostMapping(value = {"api/posts", "api/posts/"})
-    @PreAuthorize("hasAnyAuthority('ROLE_POSTS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_POSTS', 'ROLE_POSTS_EDITOR')")
     public Mono<ResponseEntity<String>> createPost(@RequestBody PostsData postsData) throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.POSTS);
@@ -104,7 +109,7 @@ public class PostsController {
     }
 
     @PutMapping("api/posts/{postId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_POSTS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_POSTS', 'ROLE_POSTS_EDITOR')")
     public Mono<ResponseEntity<String>> updatePost(@PathVariable Long postId,
                                                    @RequestBody PostsData postsData) throws JsonProcessingException {
 
@@ -134,8 +139,8 @@ public class PostsController {
     }
 
     @DeleteMapping("api/posts/{postId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_POSTS', 'ROLE_ADMIN')")
-    public Mono<ResponseEntity<String>> deletePost(@PathVariable Long postId) {
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_POSTS', 'ROLE_POSTS_EDITOR')")
+    public Mono<ResponseEntity<String>> deletePost(@PathVariable Long postId) throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.POSTS);
         if (cache.getById(postId) == null)
@@ -143,7 +148,7 @@ public class PostsController {
 
         cache.removeValue(postId);
 
-        return webClient
+        String res = webClient
                 .delete()
                 .uri(String.join("", "/posts/", String.valueOf(postId)))
                 .retrieve()
@@ -151,7 +156,9 @@ public class PostsController {
                         Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
                 )
                 .bodyToMono(String.class)
-                .map(ResponseEntity::ok)
-                .onErrorResume(throwable -> webService.handleErrorResponse(throwable));
+                .block();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(res)));
     }
 }

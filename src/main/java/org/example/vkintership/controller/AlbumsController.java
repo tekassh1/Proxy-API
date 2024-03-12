@@ -31,7 +31,7 @@ public class AlbumsController {
     CachingService cachingService;
 
     @GetMapping("api/albums/{albumId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ALBUMS', 'ROLE_ALBUMS_VIEWER')")
     public Mono<ResponseEntity<String>> getById(@PathVariable Long albumId)
             throws JsonProcessingException, HttpClientErrorException {
 
@@ -55,20 +55,25 @@ public class AlbumsController {
                     .bodyToMono(String.class)
                     .block();
 
+            if (res == null)
+                return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Requested id was not found!"));
+
             AlbumsData data = objectMapper.readValue(res, AlbumsData.class);
             cache.addValue(data.getId(), data);
-            Mono.just(ResponseEntity.ok().body(res));
+            return Mono.just(ResponseEntity.ok().body(res));
         }
 
         cachingService.updateCache(CacheType.ALBUMS);
 
         AlbumsData album = (AlbumsData) cache.getById(albumId);
-        return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(album)
-        ));
+        if (album == null)
+            return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Requested id was not found!"));
+        else
+            return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(album)));
     }
 
     @GetMapping(value = {"api/albums", "api/albums/"})
-    @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ALBUMS', 'ROLE_ALBUMS_VIEWER')")
     public Mono<ResponseEntity<String>> getAll() throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.ALBUMS);
@@ -82,7 +87,7 @@ public class AlbumsController {
     }
 
     @PostMapping(value = {"api/albums", "api/albums/"})
-    @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ALBUMS', 'ROLE_ALBUMS_EDITOR')")
     public Mono<ResponseEntity<String>> post(@RequestBody AlbumsData albumsData) throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.ALBUMS);
@@ -107,7 +112,7 @@ public class AlbumsController {
     }
 
     @PutMapping("api/albums/{albumId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ALBUMS', 'ROLE_ALBUMS_EDITOR')")
     public Mono<ResponseEntity<String>> put(@PathVariable Long albumId,
                             @RequestBody AlbumsData albumsData) throws JsonProcessingException {
 
@@ -137,8 +142,8 @@ public class AlbumsController {
     }
 
     @DeleteMapping("api/albums/{albumId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ALBUMS', 'ROLE_ADMIN')")
-    public Mono<ResponseEntity<String>> delete(@PathVariable Long albumId) {
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ALBUMS', 'ROLE_ALBUMS_EDITOR')")
+    public Mono<ResponseEntity<String>> delete(@PathVariable Long albumId) throws JsonProcessingException {
 
         Cache cache = cachingService.getCache(CacheType.ALBUMS);
         if (cache.getById(albumId) == null)
@@ -146,7 +151,7 @@ public class AlbumsController {
 
         cache.removeValue(albumId);
 
-        return webClient
+        String res = webClient
                 .delete()
                 .uri(String.join("", "/albums/", String.valueOf(albumId)))
                 .retrieve()
@@ -154,7 +159,9 @@ public class AlbumsController {
                         Mono.error(new HttpClientErrorException(clientResponse.statusCode()))
                 )
                 .bodyToMono(String.class)
-                .map(ResponseEntity::ok)
-                .onErrorResume(throwable -> webService.handleErrorResponse(throwable));
+                .block();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        return Mono.just(ResponseEntity.ok().body(objectMapper.writeValueAsString(res)));
     }
 }
