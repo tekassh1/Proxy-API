@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  postgres:
+    image: 'postgres:14.11-bullseye'
+    container_name: 'java-postgres'
+    ports:
+      - "5432:5432"
+    environment:
+      - 'POSTGRES_HOST_AUTH_METHOD=trust'
+      - 'POSTGRES_USER=postgres'
+      - 'POSTGRES_DB=db'
+      - 'POSTGRES_PASSWORD=postgres'
+    volumes:
+      - "proxyApiData:/var/lib/postgresql/data"
+
+  app:
+    build:
+      dockerfile: Dockerfile
+    command: java -jar ./app.jar
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/db
+      - PORT=8080
+    image: 'proxy-api-app'
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  proxyApiData:
