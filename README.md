@@ -11,76 +11,76 @@
 * Spring Security
 * Spring Data JPA 
 * PostgreSQL
-* Maven,
+* Maven
 * Jackson
 
 ### Эндпоинты
-    * `/signup` - регистрация нового пользователя (роль для всех пользователей по умолчанию `ROLE_USER`)
-                Формат тела запроса JSON:
-                ```
-                {
-                    "username": "username",
-                    "password": "password"
-                }
-                ```
+* `/signup` - регистрация нового пользователя (роль для всех пользователей по умолчанию `ROLE_USER`)
+              Формат тела запроса JSON:
+              ```
+              {
+                  "username": "username",
+                  "password": "password"
+              }
+              ```
 
-    * `/admin/addUser` - добавление новогопользователя (доступно только для пользователей с правами `ROLE_ADMIN`)
-    * `/admin/setRole` - добавить роль имеющемуся пользователю
-                Формат тела запроса JSON:
-                ```
-                {
-                    "username": "username",
-                    "password": "password", (не обязательно для `/admin/setRole`)
-                    "role": "role"
-                }
-                ```
-
-    * GET `api/xxx` и `api/xxx/{id}` - получить данные заданной категории (все и по id).
-    * POST `api/xxx` - добавить новую запись.
-    * PUT `api/xxx/{id}` - обновить значение записи с указанным id.
-    * DELETE `api/xxx/{id}` - удалить запись с указанным id.
-
-    Форматы запросов JSON:
-        * `api/posts`:
+* `/admin/addUser` - добавление нового пользователя (доступно только для пользователей с правами `ROLE_ADMIN`)
+* `/admin/setRole` - добавить роль имеющемуся пользователю
+            Формат тела запроса JSON:
             ```
             {
-                "userId": userId,
-                "title": "title",
-                "body": body
-            }
-            ```
-        * `api/albums`:
-            ```
-            {
-                "userId": userId,
-                "title": "title"
-            }
-            ```
-        * `api/users`:
-            ```
-            {
-                "name": "name",
                 "username": "username",
-                "email": "email",
-                "address": {
-                    "street": "street",
-                    "suite": "suite",
-                    "city": "city",
-                    "zipcode": "zipcode",
-                    "geo": {
-                        "lat": "lat",
-                        "lng": "lng"
-                    }
-                },
-                "phone": "phone",
-                "website": "website",
-                "company": {
-                    "name": "name",
-                    "catchPhrase": "catchPhrase",
-                    "bs": "bs"
-                }
+                "password": "password", (не обязательно для `/admin/setRole`)
+                "role": "role"
             }
             ```
+
+* GET `api/xxx` и `api/xxx/{id}` - получить данные заданной категории (все и по id).
+* POST `api/xxx` - добавить новую запись.
+* PUT `api/xxx/{id}` - обновить значение записи с указанным id.
+* DELETE `api/xxx/{id}` - удалить запись с указанным id.
+
+  Форматы запросов JSON:
+      * `api/posts`:
+          ```
+          {
+              "userId": userId,
+              "title": "title",
+              "body": body
+          }
+          ```
+      * `api/albums`:
+          ```
+          {
+              "userId": userId,
+              "title": "title"
+          }
+          ```
+      * `api/users`:
+          ```
+          {
+              "name": "name",
+              "username": "username",
+              "email": "email",
+              "address": {
+                  "street": "street",
+                  "suite": "suite",
+                  "city": "city",
+                  "zipcode": "zipcode",
+                  "geo": {
+                      "lat": "lat",
+                      "lng": "lng"
+                  }
+              },
+              "phone": "phone",
+              "website": "website",
+              "company": {
+                  "name": "name",
+                  "catchPhrase": "catchPhrase",
+                  "bs": "bs"
+              }
+          }
+          ```
 
 ### Расширенная ролевая модель
 * `ROLE_ADMIN` - роль администратора, доступны все запросы.
@@ -95,7 +95,7 @@
 при помощи `/admin/setRole`
 
 ### Аудит действий
-Действия пользователя сохраняются в БД. Формат записи:
+Действия пользователя сохраняются в БД. Формат записи: \
 `| id | user_id | request_type | endpoint | param | request_time | http_status_code |`
 
 ### Кэширование
