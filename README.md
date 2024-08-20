@@ -7,13 +7,13 @@
 ресурсу.
 
 ### Использованные технологии
-* Spring Boot
-* Spring Security
-* Docker
-* PostgreSQL
-* Spring Data JPA
-* Maven
-* Jackson
+* **Spring Boot**
+* **Spring Security**
+* **Docker**
+* **PostgreSQL**
+* **Spring Data JPA**
+* **Maven**
+* **Jackson**
 
 ### Эндпоинты
 * `/signup` - зарегистрировать нового пользователя (роль по умолчанию для всех пользователей - `ROLE_USER`)
