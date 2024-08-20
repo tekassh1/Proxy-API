@@ -1,12 +1,12 @@
 # Proxy API
 
-Application for proxying requests to https://jsonplaceholder.typicode.com/.
-The application implements authorization using Spring Security. User data is stored in the database.
-There is a system of roles and various access rights. Audit of actions on the server is implemented,
-with data saved to the database. Also, inmemory cache is implemented to optimize the number of requests to the target
-resource.
+Приложение для проксирования запросов на `jsonplaceholder.typicode.com`.
+В приложении реализована авторизация с использованием **Spring Security**. Данные пользователей хранятся в БД.
+Есть система ролей и различных прав доступа. Реализовано логирование на сервере,
+с сохранением в БД. Также реализован inmemory-кэш для оптимизации количества запросов к целевому
+ресурсу.
 
-### Used Technologies
+### Использованные технологии
 * Spring Boot
 * Spring Security
 * Docker
@@ -15,9 +15,9 @@ resource.
 * Maven
 * Jackson
 
-### Endpoints
-* `/signup` - register a new user (default role for all users is `ROLE_USER`)
-Request body JSON format:
+### Эндпоинты
+* `/signup` - зарегистрировать нового пользователя (роль по умолчанию для всех пользователей - `ROLE_USER`)
+Формат запроса JSON:\
 ```
 {
     "username": "username",
@@ -25,23 +25,23 @@ Request body JSON format:
 }
 ```
 
-* `/admin/addUser` - add a new user (available only for users with `ROLE_ADMIN` privileges)
-* `/admin/setRole` - add a role to an existing user. \
-Request body JSON format:
+* `/admin/addUser` - добавить нового пользователя (доступно только пользователям с ролью `ROLE_ADMIN`)
+* `/admin/setRole` - добавить роль существующему пользователю.
+Формат запроса JSON:\
 ```
 {
     "username": "username",
-    "password": "password", (not necessary for `/admin/setRole`)
+    "password": "password", (необязательно для `/admin/setRole`)
     "role": "role"
 }
 ```
 
-* GET `api/xxx` and `api/xxx/{id}` - get data of a specified category (all and by id).
-* POST `api/xxx` - add a new entry.
-* PUT `api/xxx/{id}` - update the value of an entry with the specified id.
-* DELETE `api/xxx/{id}` - delete an entry with the specified id.
+* GET `api/xxx` и `api/xxx/{id}` - получить данные указанной категории (все и по id).
+* POST `api/xxx` - добавить новую запись.
+* PUT `api/xxx/{id}` - обновить значение записи с заданным id.
+* DELETE `api/xxx/{id}` - удалить запись с заданным id.
 
-JSON request formats:
+Форматы запросов JSON:
 * `api/posts`:
 ```
 {
@@ -83,32 +83,32 @@ JSON request formats:
     }
 ```
 
-### Extended Role Model
-* `ROLE_ADMIN` - administrator role, all requests are accessible.
-* `ROLE_XXX` - role for accessing all requests of endpoint `XXX`.
-* `ROLE_XXX_VIEWER` - role for accessing GET requests of endpoint `XXX`.
-* `ROLE_XXX_EDITOR` - role for accessing POST/PUT/DELETE requests of endpoint `XXX`.
+### Расширенная ролевая модель
+* `ROLE_ADMIN` - роль администратора, доступны все запросы.
+* `ROLE_XXX` - роль для доступа ко всем запросам эндпоинта `XXX`.
+* `ROLE_XXX_VIEWER` - роль для доступа к запросам GET эндпоинта `XXX`.
+* `ROLE_XXX_EDITOR` - роль для доступа к запросам POST/PUT/DELETE эндпоинта `XXX`.
     
-An administrator account is created (if it does not exist) when the application starts.
-Login, password - `admin`
-Default role for a new user - `ROLE_USER`. Users with these roles do not
-have access to `/api` resources. Access roles must be assigned by the administrator
-using `/admin/setRole`.
+Учетная запись администратора создается (если ее нет) при запуске приложения.
+Логин, пароль - `admin`.
+Роль по умолчанию для нового пользователя - `ROLE_USER`. Пользователи с этими ролями не
+имеют доступа к ресурсам `/api`. Роли доступа должны быть назначены администратором
+при помощи `/admin/setRole`.
 
-### Action Audit
-User actions are saved in the database. Record format: \
+### Логирование
+Действия пользователя сохраняются в базе данных. Формат записи: \
 `| id | user_id | request_type | endpoint | param | request_time | http_status_code |`
 
-### Caching
-Inmemory caching of target resource data is implemented using ConcurrentHashMap<>.
-The cache logic is presented in the image:
+### Кэширование
+In-Memory кэш реализован при помощи `ConcurrentHashMap`.
+Логика кэширования представлена ​​на изображении:
 
 ![CachingProcess](https://github.com/tekassh1/VKCloud-Intership/assets/90504722/793da8fb-f477-4a27-a558-2627c74bb8af)
 
-In addition, a `@Scheduled` method is used, which checks the validity of the hashes
-every 5 seconds and, if the value is not valid, requests an update from the target resource.
+Кроме того, используется метод `@Scheduled`, который проверяет валидность хэшей
+каждые 5 секунд и, если значение невалидно, запрашивает обновление у целевого ресурса.
 
-### Miscellaneous
-There is a `docker-compose.yaml` file for deployment in Docker. Two images are used - application image
-and PostgreSQL image. JDK 17 is used in the project. Tables for the application are created in the database automatically using
+### Прочее
+Также есть файл `docker-compose.yaml` для развёртывания приложения в **Docker**. Используются два образа — образ приложения
+и образ PostgreSQL. В проекте используется JDK 17. Таблицы для приложения создаются в базе данных автоматически при помощи
 `hibernate.ddl-auto=update`.
